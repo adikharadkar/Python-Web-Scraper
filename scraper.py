@@ -1,5 +1,18 @@
 from bs4 import BeautifulSoup
 import requests
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+fileHandler = logging.FileHandler('scraper.log')
+fileHandler.setFormatter(formatter)
+
+logger.addHandler(fileHandler)
+
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s-->%(levelname)s-->%(message)s')
 
 # GET requests to the ubuntu.com/security/notices page
 content = requests.get("https://ubuntu.com/security/notices").text
@@ -8,25 +21,23 @@ content = requests.get("https://ubuntu.com/security/notices").text
 try:
 	soup = BeautifulSoup(content, 'lxml')
 except:
-	print("Data could not be extracted using BeautifulSoup() function")
+	logger.error("Data could not be extracted using BeautifulSoup() function")
 
 # Extracting the title name of the web page
 titleName = soup.title.text
-
-##########################################################################################################################################
 
 # Extracting the first section of the webpage
 # The first section contains the header and the summary
 try:
 	section = soup.find('section', class_='p-strip--suru-topped')
 except:
-	print("Section tag not found!")
+	logger.error("Section tag not found!")
 
 # Extracting the header i.e. "Ubuntu Security Notices"
 try:
 	header = section.find_all('div', class_='row')[0].div.h1.text
 except IndexError:
-	print("Index out of range")
+	logger.error("Index out of range")
 	header = None
 except:
 	header = None
@@ -38,7 +49,7 @@ try:
 	for smry in summaries:
 		summary += smry.text
 except IndexError:
-	print("Index is out of range")
+	logger.error("Index is out of range")
 	summary = None
 except:
 	summary = None
@@ -54,15 +65,13 @@ if summary is not None:
 	except:
 		links = None
 
-###################################################################################################################################
-
 # LATEST NOTICES
 
 # Extracting the whole section of articles
 try:
 	section_latest_notices = soup.find('section', class_='p-strip')
 except:
-	print("Section tag of latest notices could not be extracted")
+	logger.error("Section tag of latest notices could not be extracted")
 
 # Extracting the header i.e. "Latest Notices"
 try:
@@ -101,11 +110,11 @@ try:
 			latest_notices_summary = None
 		
 		lst_latest_notice = [latest_notices_name, latest_notices_link, latest_notices_date, latest_notices_summary]
-		print(lst_latest_notice)
+		logger.info(lst_latest_notice)
 
 		lst_latest_notices.append(lst_latest_notice)
 except IndexError:
-	print("Index is out of range")
+	logger.error("Index is out of range")
 except:
 	lst_latest_notices = None
 
@@ -120,13 +129,13 @@ try:
 				link = list_item.a['href']
 				dict_ubuntu_versions.update({name: link})
 		except IndexError:
-			print("Index is out of range")
+			logger.error("Index is out of range")
 		except:
 			dict_ubuntu_versions = None
 except IndexError:
-	print('Index is out of range')
+	logger.error('Index is out of range')
 except:
-	print('Error - Ubuntu Versions')
+	logger.error('Error - Ubuntu Versions')
 
 # Extracting all the CVE IDs and storing them in a dictionary
 dict_cve_ids = {}
@@ -135,7 +144,7 @@ try:
 		try:
 			latest_notices_cves = article.find_all('p')[2].small.find_all('a')
 		except:
-			print("CVE IDs not found!")
+			logger.error("CVE IDs not found!")
 		try:
 			for cve in latest_notices_cves:
 				try:
@@ -149,28 +158,28 @@ try:
 					cve_link = None
 				dict_cve_ids.update({cve_name: cve_link})
 		except IndexError:
-			print("Index is out of range")
+			logger.error("Index is out of range")
 		except:
 			dict_cve_ids = None
 except IndexError:
-	print("Index is out of range")
+	logger.error("Index is out of range")
 except:
 	dict_cve_ids = None
 
 # Printing the header, summary and links on the console
 print("-"*200)
-print("Header = {}".format(header))
-print("Summary = {}".format(summary))
+logger.info("Header = {}".format(header))
+logger.info("Summary = {}".format(summary))
 print("-"*200)
 try:
 	for link in links:
-		print("Link: {}".format(link))
+		logger.info("Link: {}".format(link))
 except IndexError:
-	print("List index out of range")
+	logger.error("List index out of range")
 except:
-	print("Links = {}".format(None))
+	logger.warning("Links = {}".format(None))
 print("-"*200)
 # print(lst_latest_notice)
-print("UBUNTU VERSION - {}".format(dict_ubuntu_versions))
+logger.info("UBUNTU VERSION - {}".format(dict_ubuntu_versions))
 print("-"*200)
-print("CVE IDs: {}".format(dict_cve_ids))
+logger.info("CVE IDs: {}".format(dict_cve_ids))
